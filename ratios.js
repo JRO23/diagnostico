@@ -26,10 +26,10 @@ function computeRatios(d){
   const cuentasCobrar = d.sum_cuentas_cobrar ?? null;
   const cuentasPagar  = d.sum_cuentas_pagar  ?? null;
 
-  // Ganancia operacional: campo directo si existe, si no se deriva
-  const ganOper = d.sum_ganancia_operacional != null
-    ? (d.sum_ganancia_operacional ?? 0)
-    : (ganBruta - gasAdmin - gasVentas);
+  // Ganancia operacional: campo directo del RPC (sum_ganancia_operacional)
+  // NOTA: El fallback derivado (ganBruta-gasAdmin-gasVentas) fue eliminado porque
+  // en 2022 daba 242M vs el correcto 132M — diferencia de 83%.
+  const ganOper = d.sum_ganancia_operacional ?? 0;
 
   // LIQUIDEZ
   const razonCorriente = div(actCorr, pasCorr);
