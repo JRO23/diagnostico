@@ -1,0 +1,21 @@
+# Node modules
+node_modules/
+package-lock.json
+
+# Excel (demasiado grande para GitHub)
+*.xlsx
+*.xls
+
+# Logs de carga
+upload_errors.log
+
+# Scripts de carga (solo necesarios localmente)
+01_inspect_excel.js
+02_upload_to_supabase.js
+03_resume_upload.js
+setup_supabase.js
+column_map.json
+
+# Sistema
+.DS_Store
+Thumbs.db

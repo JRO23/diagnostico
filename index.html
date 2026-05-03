@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Diagnóstico Sectorial | Sistema de Análisis Financiero</title>
+  <meta name="description" content="Plataforma de diagnóstico financiero sectorial con análisis DuPont, salud sectorial, prospectiva y atractivo."/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ── SIDEBAR ─────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">📊</div>
+    <div>
+      <div class="logo-title">DiagnósticoSectorial</div>
+      <div class="logo-sub">Análisis Financiero 2020–2024</div>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <label class="filter-label">Período de análisis</label>
+    <div class="year-grid">
+      <label class="year-chip"><input type="checkbox" value="2020" checked> 2020</label>
+      <label class="year-chip"><input type="checkbox" value="2021" checked> 2021</label>
+      <label class="year-chip"><input type="checkbox" value="2022" checked> 2022</label>
+      <label class="year-chip"><input type="checkbox" value="2023" checked> 2023</label>
+      <label class="year-chip"><input type="checkbox" value="2024" checked> 2024</label>
+    </div>
+    <button class="btn-select-all" onclick="toggleAllYears()">Seleccionar todos</button>
+  </div>
+
+  <div class="filter-section">
+    <label class="filter-label">Código CIIU</label>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="ciiu-search" placeholder="Buscar CIIU o descripción..." autocomplete="off"/>
+    </div>
+    <div id="ciiu-dropdown" class="ciiu-dropdown hidden"></div>
+    <div id="ciiu-selected" class="ciiu-selected hidden">
+      <span id="ciiu-selected-text"></span>
+      <button onclick="clearCiiu()">✕</button>
+    </div>
+  </div>
+
+  <button class="btn-analyze" id="btn-analyze" onclick="runAnalysis()">
+    <span class="btn-icon">⚡</span> Analizar Sector
+  </button>
+
+  <div class="sidebar-info">
+    <div class="info-item"><span>🗄️</span> 141,991 empresas</div>
+    <div class="info-item"><span>📅</span> 2020 – 2024</div>
+    <div class="info-item"><span>🇨🇴</span> Colombia</div>
+  </div>
+</aside>
+
+<!-- ── MAIN CONTENT ────────────────────────────── -->
+<main class="main">
+
+  <!-- Welcome state -->
+  <div id="welcome-state" class="welcome-state">
+    <div class="welcome-icon">📈</div>
+    <h1>Sistema de Diagnóstico Sectorial</h1>
+    <p>Selecciona un código CIIU y el período de análisis para generar los indicadores financieros del sector.</p>
+    <div class="welcome-cards">
+      <div class="wcard"><div class="wcard-icon">🏥</div><div>Salud Sectorial</div></div>
+      <div class="wcard"><div class="wcard-icon">🔬</div><div>Análisis DuPont</div></div>
+      <div class="wcard"><div class="wcard-icon">🔭</div><div>Prospectiva</div></div>
+      <div class="wcard"><div class="wcard-icon">⭐</div><div>Atractivo</div></div>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div id="loading-state" class="loading-state hidden">
+    <div class="spinner"></div>
+    <p>Consultando base de datos...</p>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="dashboard hidden">
+
+    <!-- Header -->
+    <div class="dash-header">
+      <div>
+        <div class="dash-ciiu-badge" id="dash-ciiu-badge"></div>
+        <h2 id="dash-title"></h2>
+        <p id="dash-subtitle"></p>
+      </div>
+      <div class="dash-kpis" id="dash-kpis"></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('salud', this)">🏥 Salud Sectorial</button>
+      <button class="tab" onclick="showTab('dupont', this)">🔬 Análisis DuPont</button>
+      <button class="tab" onclick="showTab('prospectiva', this)">🔭 Prospectiva</button>
+      <button class="tab" onclick="showTab('atractivo', this)">⭐ Atractivo</button>
+    </div>
+
+    <!-- ─ TAB: SALUD ─────────────────────── -->
+    <div id="tab-salud" class="tab-content active">
+      <div class="section-grid-2">
+        <div class="card">
+          <h3 class="card-title">📊 Índice de Salud Sectorial</h3>
+          <div class="score-display">
+            <canvas id="chart-gauge-salud" width="220" height="220"></canvas>
+            <div class="score-info">
+              <div class="score-value" id="score-salud-val">--</div>
+              <div class="score-label" id="score-salud-label">--</div>
+              <div class="score-desc">Score 0–100</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">🕸️ Perfil de Indicadores</h3>
+          <canvas id="chart-radar-salud" height="240"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">📈 Evolución de Ratios Clave</h3>
+        <canvas id="chart-salud-trend" height="120"></canvas>
+      </div>
+      <div class="card">
+        <h3 class="card-title">📋 Tabla de Indicadores por Año</h3>
+        <div class="table-wrap" id="table-salud"></div>
+      </div>
+    </div>
+
+    <!-- ─ TAB: DUPONT ────────────────────── -->
+    <div id="tab-dupont" class="tab-content hidden">
+      <div class="card dupont-formula-card">
+        <h3 class="card-title">🔬 Descomposición DuPont — Último Año Disponible</h3>
+        <div class="dupont-formula" id="dupont-formula"></div>
+      </div>
+      <div class="section-grid-2">
+        <div class="card">
+          <h3 class="card-title">📊 Componentes DuPont por Año</h3>
+          <canvas id="chart-dupont-components" height="260"></canvas>
+        </div>
+        <div class="card">
+          <h3 class="card-title">📈 ROE Histórico</h3>
+          <canvas id="chart-roe-trend" height="260"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">📋 Detalle DuPont por Año</h3>
+        <div class="table-wrap" id="table-dupont"></div>
+      </div>
+    </div>
+
+    <!-- ─ TAB: PROSPECTIVA ───────────────── -->
+    <div id="tab-prospectiva" class="tab-content hidden">
+      <div class="section-grid-3" id="cagr-cards"></div>
+      <div class="section-grid-2">
+        <div class="card">
+          <h3 class="card-title">📈 Crecimiento de Ingresos</h3>
+          <canvas id="chart-ingresos-trend" height="220"></canvas>
+        </div>
+        <div class="card">
+          <h3 class="card-title">📊 Tendencia de Márgenes</h3>
+          <canvas id="chart-margen-trend" height="220"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">🔭 Score de Prospectiva</h3>
+        <div class="prospectiva-score-wrap" id="prospectiva-score-wrap"></div>
+      </div>
+    </div>
+
+    <!-- ─ TAB: ATRACTIVO ────────────────── -->
+    <div id="tab-atractivo" class="tab-content hidden">
+      <div class="section-grid-2">
+        <div class="card">
+          <h3 class="card-title">⭐ Score de Atractivo Sectorial</h3>
+          <div class="score-display">
+            <canvas id="chart-gauge-atractivo" width="220" height="220"></canvas>
+            <div class="score-info">
+              <div class="score-value" id="score-atractivo-val">--</div>
+              <div class="score-label" id="score-atractivo-label">--</div>
+              <div class="score-desc">Score 0–100</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">🏆 Top 30 Sectores por Ingresos (último año)</h3>
+          <canvas id="chart-sector-comparison" height="300"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">📋 Dimensiones del Atractivo</h3>
+        <div id="atractivo-dimensions"></div>
+      </div>
+    </div>
+
+  </div><!-- /dashboard -->
+</main>
+
+<script src="main.js"></script>
+</body>
+</html>
