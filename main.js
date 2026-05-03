@@ -171,15 +171,15 @@ function renderSalud(data,anos){
     buildIndRows(data,anos,'Prueba Ácida','(Act. Corr. - Inventarios) / Pas. Corr.',r=>r.liquidez.pruebaAcida,v=>x(v),v=>colorVal(v,1,0.7))
   ]);
   renderIndRows('ind-actividad',[
-    buildIndRows(data,anos,'Rot. Cartera (v)','Ingresos / Cuentas por Cobrar',r=>r.actividad.rotCarteraV,v=>n(v)+' v',v=>colorVal(v,6,3)),
-    buildIndRows(data,anos,'Días Cartera','365 / Rot. Cartera',r=>r.actividad.rotCarteraD,v=>n(v)+' d',v=>v==null?'#94a3b8':v<=60?'#10b981':v<=90?'#f59e0b':'#ef4444'),
-    buildIndRows(data,anos,'Rot. Inventario (v)','Costo Ventas / Inventarios',r=>r.actividad.rotInventV,v=>n(v)+' v',v=>colorVal(v,6,3)),
-    buildIndRows(data,anos,'Días Inventario','365 / Rot. Inventario',r=>r.actividad.rotInventD,v=>n(v)+' d',v=>v==null?'#94a3b8':v<=60?'#10b981':v<=90?'#f59e0b':'#ef4444'),
-    buildIndRows(data,anos,'Rot. Pago (v)','Costo Ventas / Cuentas por Pagar',r=>r.actividad.rotPagoV,v=>n(v)+' v',null),
-    buildIndRows(data,anos,'Días Pago','365 / Rot. Pago',r=>r.actividad.rotPagoD,v=>n(v)+' d',null),
-    buildIndRows(data,anos,'Ciclo de Caja','Días Inv. + Días Cartera - Días Pago',r=>r.actividad.cicloCaja,v=>n(v)+' d',v=>v==null?'#94a3b8':v<=30?'#10b981':v<=60?'#f59e0b':'#ef4444'),
-    buildIndRows(data,anos,'Rot. Activos','Ingresos / Activos Totales',r=>r.actividad.rotActivos,v=>x(v),v=>colorVal(v,1,0.5)),
-    buildIndRows(data,anos,'Capital de Trabajo','Act. Corrientes - Pas. Corrientes',r=>r.actividad.capitalTrabajo,v=>M(v),v=>v==null?'#94a3b8':v>=0?'#10b981':'#ef4444')
+    buildIndRows(data,anos,'Rot. Cartera (v)','Ingresos ÷ Cuentas por Cobrar',r=>r.actividad.rotCarteraV,v=>n(v,4)+' v',v=>colorVal(v,6,3)),
+    buildIndRows(data,anos,'Días Cartera','(Cuentas Cobrar × 365) ÷ Ingresos',r=>r.actividad.rotCarteraD,v=>dias(v),v=>v==null?'#94a3b8':v<=60?'#10b981':v<=90?'#f59e0b':'#ef4444'),
+    buildIndRows(data,anos,'Rot. Inventario (v)','Costo Ventas ÷ Inventarios',r=>r.actividad.rotInventV,v=>n(v,4)+' v',v=>colorVal(v,6,3)),
+    buildIndRows(data,anos,'Días Inventario','(Inventarios × 365) ÷ Costo Ventas',r=>r.actividad.rotInventD,v=>dias(v),v=>v==null?'#94a3b8':v<=60?'#10b981':v<=90?'#f59e0b':'#ef4444'),
+    buildIndRows(data,anos,'Rot. Pago (v)','Costo Ventas ÷ Cuentas por Pagar',r=>r.actividad.rotPagoV,v=>n(v,4)+' v',null),
+    buildIndRows(data,anos,'Días Pago','(Cuentas Pagar × 365) ÷ Costo Ventas',r=>r.actividad.rotPagoD,v=>dias(v),null),
+    buildIndRows(data,anos,'Ciclo de Caja','Días Inv + Días Cartera − Días Pago',r=>r.actividad.cicloCaja,v=>dias(v),v=>v==null?'#94a3b8':v<=30?'#10b981':v<=60?'#f59e0b':'#ef4444'),
+    buildIndRows(data,anos,'Rot. Activos','Ingresos ÷ Activos Totales',r=>r.actividad.rotActivos,v=>n(v,4)+'x',v=>colorVal(v,1,0.5)),
+    buildIndRows(data,anos,'Capital de Trabajo','Act. Corrientes − Pas. Corrientes',r=>r.actividad.capitalTrabajo,v=>M(v),v=>v==null?'#94a3b8':v>=0?'#10b981':'#ef4444')
   ]);
   renderIndRows('ind-rentabilidad',[
     buildIndRows(data,anos,'ROE','Ganancia / Patrimonio',r=>r.rentabilidad.roe,v=>p(v),v=>colorVal(v,0.1,0.05)),
