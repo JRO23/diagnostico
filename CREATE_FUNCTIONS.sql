@@ -16,6 +16,8 @@ AS $$
 $$;
 
 -- 2. Datos agregados por año para un CIIU específico
+-- DROP necesario porque cambia el tipo de retorno (nuevas columnas)
+DROP FUNCTION IF EXISTS get_sector_data(text, integer, integer);
 CREATE OR REPLACE FUNCTION get_sector_data(
   p_ciiu       text,
   p_start_year int DEFAULT 2020,
