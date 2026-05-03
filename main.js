@@ -126,11 +126,12 @@ function renderDashboard(data,ctx,years){
   document.getElementById('dash-ciiu-badge').textContent=selectedCIIU.substring(0,10);
   document.getElementById('dash-title').textContent=selectedCIIU.length>70?selectedCIIU.substring(0,70)+'…':selectedCIIU;
   document.getElementById('dash-subtitle').textContent=`${anos[0]} – ${anos[anos.length-1]} | ${data.reduce((s,d)=>Math.max(s,d.num_empresas||0),0)} empresas máx.`;
+  const _kR=computeRatios(lastRow);
   document.getElementById('dash-kpis').innerHTML=[
     {v:fmt(lastRow.sum_ingresos),l:'Ingresos '+lastRow.ano,c:'#3b82f6'},
-    {v:pct(lastRow.avg_margen_neto),l:'Margen Neto',c:lastRow.avg_margen_neto>0?'#10b981':'#ef4444'},
-    {v:pct(lastRow.avg_roa),l:'ROA',c:'#8b5cf6'},
-    {v:(lastRow.avg_liquidez||0).toFixed(2)+'x',l:'Liquidez',c:'#f59e0b'}
+    {v:pct(_kR.rentabilidad.margenNeto),l:'Margen Neto',c:(_kR.rentabilidad.margenNeto||0)>0?'#10b981':'#ef4444'},
+    {v:pct(_kR.rentabilidad.roa),l:'ROA',c:'#8b5cf6'},
+    {v:(_kR.liquidez.razonCorriente!=null?_kR.liquidez.razonCorriente.toFixed(2):'—')+'x',l:'Liquidez',c:'#f59e0b'}
   ].map(k=>`<div class="kpi-card"><div class="kpi-value" style="color:${k.c}">${k.v}</div><div class="kpi-label">${k.l}</div></div>`).join('');
   renderSalud(data,anos);
   renderDupont(data,anos);
@@ -140,35 +141,74 @@ function renderDashboard(data,ctx,years){
 
 /* ── SALUD ── */
 function calcSaludScore(row){
-  const liq=row.avg_liquidez||0, end=row.avg_endeudamiento||0, mar=row.avg_margen_neto||0, roa=row.avg_roa||0;
-  const sLiq=liq>=2?100:liq>=1.5?75:liq>=1?50:25;
-  const sEnd=end<=0.3?100:end<=0.5?75:end<=0.7?50:25;
-  const sMar=mar>=0.15?100:mar>=0.1?75:mar>=0.05?50:mar>=0?25:0;
-  const sRoa=roa>=0.1?100:roa>=0.05?75:roa>=0.02?50:roa>=0?25:0;
-  return Math.round(sLiq*0.25+sEnd*0.25+sMar*0.3+sRoa*0.2);
+  const r=computeRatios(row);
+  return calcScore(r);
 }
 
 function renderSalud(data,anos){
   const last=data[data.length-1]||{};
+  const lastR=computeRatios(last);
   const score=calcSaludScore(last);
   document.getElementById('score-salud-val').textContent=score;
   document.getElementById('score-salud-val').style.color=color(score);
   document.getElementById('score-salud-label').textContent=scoreLabel(score);
   document.getElementById('score-salud-label').style.color=color(score);
-  const liq=last.avg_liquidez||0, end=last.avg_endeudamiento||0, mar=(last.avg_margen_neto||0)*100, roa=(last.avg_roa||0)*100;
+  const liq=lastR.liquidez.razonCorriente||0;
+  const end=lastR.endeudamiento.razonEndeudamiento||0;
+  const mar=(lastR.rentabilidad.margenNeto||0)*100;
+  const roa=(lastR.rentabilidad.roa||0)*100;
   mkChart('chart-gauge-salud',gaugeChart(score));
-  mkChart('chart-radar-salud',{type:'radar',data:{labels:['Liquidez','Solvencia','Margen Neto','ROA','Eficiencia Op.'],datasets:[{label:'Score',data:[Math.min(liq/2*100,100),Math.max(100-(end*100),0),Math.min(Math.max(mar*4,0),100),Math.min(Math.max(roa*5,0),100),last.sum_ganancia_bruta&&last.sum_ingresos?Math.min((last.sum_ganancia_bruta/last.sum_ingresos)*200,100):0],fill:true,backgroundColor:'rgba(59,130,246,0.15)',borderColor:'#3b82f6',pointBackgroundColor:'#3b82f6'}]},options:{...radarOpts}});
-  mkChart('chart-salud-trend',{type:'line',data:{labels:anos,datasets:[{label:'Liquidez',data:data.map(d=>+(d.avg_liquidez||0).toFixed(2)),borderColor:'#3b82f6',tension:.4,yAxisID:'y'},{label:'Endeudamiento',data:data.map(d=>+(d.avg_endeudamiento||0).toFixed(2)),borderColor:'#ef4444',tension:.4,yAxisID:'y'},{label:'Margen Neto %',data:data.map(d=>+((d.avg_margen_neto||0)*100).toFixed(2)),borderColor:'#10b981',tension:.4,yAxisID:'y2'}]},options:{...lineOpts,scales:{y:{...axisY,title:{display:true,text:'Ratio',color:'#94a3b8'}},y2:{...axisY,position:'right',title:{display:true,text:'%',color:'#94a3b8'},grid:{display:false}}}}});
+  mkChart('chart-radar-salud',{type:'radar',data:{labels:['Liquidez','Solvencia','Margen Neto','ROA','Margen Bruto'],datasets:[{label:'Score',data:[Math.min(liq/2*100,100),Math.max(100-(end*100),0),Math.min(Math.max(mar*4,0),100),Math.min(Math.max(roa*5,0),100),Math.min((lastR.rentabilidad.margenBruto||0)*200,100)],fill:true,backgroundColor:'rgba(59,130,246,0.15)',borderColor:'#3b82f6',pointBackgroundColor:'#3b82f6'}]},options:{...radarOpts}});
+  mkChart('chart-salud-trend',{type:'line',data:{labels:anos,datasets:[
+    {label:'Liquidez',data:data.map(d=>{const r=computeRatios(d);return+(r.liquidez.razonCorriente||0).toFixed(2);}),borderColor:'#3b82f6',tension:.4,yAxisID:'y'},
+    {label:'Endeudamiento',data:data.map(d=>{const r=computeRatios(d);return+(r.endeudamiento.razonEndeudamiento||0).toFixed(2);}),borderColor:'#ef4444',tension:.4,yAxisID:'y'},
+    {label:'Margen Neto %',data:data.map(d=>{const r=computeRatios(d);return+((r.rentabilidad.margenNeto||0)*100).toFixed(2);}),borderColor:'#10b981',tension:.4,yAxisID:'y2'}
+  ]},options:{...lineOpts,scales:{y:{...axisY,title:{display:true,text:'Ratio',color:'#94a3b8'}},y2:{...axisY,position:'right',title:{display:true,text:'%',color:'#94a3b8'},grid:{display:false}}}}});
+
+  /* ── Indicadores por categoría ── */
+  renderIndRows('ind-liquidez',[
+    buildIndRows(data,anos,'Razón Corriente','Act. Corrientes / Pas. Corrientes',r=>r.liquidez.razonCorriente,v=>x(v),v=>colorVal(v,1.5,1)),
+    buildIndRows(data,anos,'Prueba Ácida','(Act. Corr. - Inventarios) / Pas. Corr.',r=>r.liquidez.pruebaAcida,v=>x(v),v=>colorVal(v,1,0.7))
+  ]);
+  renderIndRows('ind-actividad',[
+    buildIndRows(data,anos,'Rot. Cartera (v)','Ingresos / Cuentas por Cobrar',r=>r.actividad.rotCarteraV,v=>n(v)+' v',v=>colorVal(v,6,3)),
+    buildIndRows(data,anos,'Días Cartera','365 / Rot. Cartera',r=>r.actividad.rotCarteraD,v=>n(v)+' d',v=>v==null?'#94a3b8':v<=60?'#10b981':v<=90?'#f59e0b':'#ef4444'),
+    buildIndRows(data,anos,'Rot. Inventario (v)','Costo Ventas / Inventarios',r=>r.actividad.rotInventV,v=>n(v)+' v',v=>colorVal(v,6,3)),
+    buildIndRows(data,anos,'Días Inventario','365 / Rot. Inventario',r=>r.actividad.rotInventD,v=>n(v)+' d',v=>v==null?'#94a3b8':v<=60?'#10b981':v<=90?'#f59e0b':'#ef4444'),
+    buildIndRows(data,anos,'Rot. Pago (v)','Costo Ventas / Cuentas por Pagar',r=>r.actividad.rotPagoV,v=>n(v)+' v',null),
+    buildIndRows(data,anos,'Días Pago','365 / Rot. Pago',r=>r.actividad.rotPagoD,v=>n(v)+' d',null),
+    buildIndRows(data,anos,'Ciclo de Caja','Días Inv. + Días Cartera - Días Pago',r=>r.actividad.cicloCaja,v=>n(v)+' d',v=>v==null?'#94a3b8':v<=30?'#10b981':v<=60?'#f59e0b':'#ef4444'),
+    buildIndRows(data,anos,'Rot. Activos','Ingresos / Activos Totales',r=>r.actividad.rotActivos,v=>x(v),v=>colorVal(v,1,0.5)),
+    buildIndRows(data,anos,'Capital de Trabajo','Act. Corrientes - Pas. Corrientes',r=>r.actividad.capitalTrabajo,v=>M(v),v=>v==null?'#94a3b8':v>=0?'#10b981':'#ef4444')
+  ]);
+  renderIndRows('ind-rentabilidad',[
+    buildIndRows(data,anos,'ROE','Ganancia / Patrimonio',r=>r.rentabilidad.roe,v=>p(v),v=>colorVal(v,0.1,0.05)),
+    buildIndRows(data,anos,'ROA','Ganancia / Activos',r=>r.rentabilidad.roa,v=>p(v),v=>colorVal(v,0.05,0.02)),
+    buildIndRows(data,anos,'Margen Bruto','Ganancia Bruta / Ingresos',r=>r.rentabilidad.margenBruto,v=>p(v),v=>colorVal(v,0.3,0.15)),
+    buildIndRows(data,anos,'Margen EBIT','Ganancia Operacional / Ingresos',r=>r.rentabilidad.margenEBIT,v=>p(v),v=>colorVal(v,0.1,0.05)),
+    buildIndRows(data,anos,'Margen Neto','Ganancia Neta / Ingresos',r=>r.rentabilidad.margenNeto,v=>p(v),v=>colorVal(v,0.1,0.05))
+  ]);
+  renderIndRows('ind-endeudamiento',[
+    buildIndRows(data,anos,'Razón Endeudamiento','Pasivos / Activos',r=>r.endeudamiento.razonEndeudamiento,v=>p(v),v=>v==null?'#94a3b8':v<=0.5?'#10b981':v<=0.7?'#f59e0b':'#ef4444'),
+    buildIndRows(data,anos,'Estructura Capital','Pasivos / Patrimonio',r=>r.endeudamiento.estructuraCapital,v=>x(v),v=>v==null?'#94a3b8':v<=1?'#10b981':v<=2?'#f59e0b':'#ef4444'),
+    buildIndRows(data,anos,'Cobertura Intereses','EBIT / Costos Financieros',r=>r.endeudamiento.coberturaIntereses,v=>x(v),v=>colorVal(v,3,1.5)),
+    buildIndRows(data,anos,'Apalancamiento','Patrimonio / Activos',r=>r.endeudamiento.apalancamiento,v=>p(v),v=>colorVal(v,0.4,0.3))
+  ]);
+
   document.getElementById('table-salud').innerHTML=buildTable(
-    ['Año','Empresas','Liquidez','Endeudamiento','Margen Neto','ROA','ROE'],
-    data.map(d=>[d.ano,d.num_empresas,(d.avg_liquidez||0).toFixed(2)+'x',pct(d.avg_endeudamiento),pct(d.avg_margen_neto),pct(d.avg_roa),pct(d.avg_roe)])
+    ['Año','Empresas','Razón Corr.','Prueba Ácida','Endeudamiento','Margen Neto','ROA','ROE'],
+    data.map(d=>{
+      const r=computeRatios(d);
+      return[d.ano,d.num_empresas,x(r.liquidez.razonCorriente),x(r.liquidez.pruebaAcida),p(r.endeudamiento.razonEndeudamiento),p(r.rentabilidad.margenNeto),p(r.rentabilidad.roa),p(r.rentabilidad.roe)];
+    })
   );
 }
 
 /* ── DUPONT ── */
 function renderDupont(data,anos){
   const last=data[data.length-1]||{};
-  const mn=last.avg_margen_neto||0, ra=last.sum_ingresos&&last.sum_activos?last.sum_ingresos/last.sum_activos:0, em=last.sum_activos&&last.sum_patrimonio?last.sum_activos/last.sum_patrimonio:0, roe=mn*ra*em;
+  const dp=computeRatios(last).dupont;
+  const mn=dp.margenNeto||0, ra=dp.rotActivos||0, em=dp.multiplicadorCapital||0, roe=dp.roeDupont||0;
   document.getElementById('dupont-formula').innerHTML=`
     <div class="dupont-box"><div class="dupont-box-label">ROE</div><div class="dupont-box-value" style="color:#3b82f6">${pct(roe)}</div><div class="dupont-box-name">Retorno s/Patrimonio</div></div>
     <div class="dupont-op">=</div>
@@ -177,15 +217,19 @@ function renderDupont(data,anos){
     <div class="dupont-box"><div class="dupont-box-label">Rot. Activos</div><div class="dupont-box-value" style="color:#f59e0b">${ra.toFixed(2)}x</div><div class="dupont-box-name">Eficiencia</div></div>
     <div class="dupont-op">×</div>
     <div class="dupont-box"><div class="dupont-box-label">Multiplicador</div><div class="dupont-box-value" style="color:#8b5cf6">${em.toFixed(2)}x</div><div class="dupont-box-name">Apalancamiento</div></div>`;
-  const raArr=data.map(d=>d.sum_ingresos&&d.sum_activos?+(d.sum_ingresos/d.sum_activos).toFixed(3):0);
-  const emArr=data.map(d=>d.sum_activos&&d.sum_patrimonio?+(d.sum_activos/d.sum_patrimonio).toFixed(3):0);
-  const mnArr=data.map(d=>+((d.avg_margen_neto||0)*100).toFixed(2));
-  const roeArr=data.map(d=>+((d.avg_roe||0)*100).toFixed(2));
+  const raArr=data.map(d=>+(computeRatios(d).dupont.rotActivos||0).toFixed(3));
+  const emArr=data.map(d=>+(computeRatios(d).dupont.multiplicadorCapital||0).toFixed(3));
+  const mnArr=data.map(d=>+((computeRatios(d).dupont.margenNeto||0)*100).toFixed(2));
+  const roeArr=data.map(d=>+((computeRatios(d).rentabilidad.roe||0)*100).toFixed(2));
+  const roeDpArr=data.map(d=>+((computeRatios(d).dupont.roeDupont||0)*100).toFixed(2));
   mkChart('chart-dupont-components',{type:'bar',data:{labels:anos,datasets:[{label:'Margen Neto %',data:mnArr,backgroundColor:'rgba(16,185,129,.7)',yAxisID:'y'},{label:'Rot. Activos x',data:raArr,backgroundColor:'rgba(245,158,11,.7)',yAxisID:'y2'},{label:'Multiplicador x',data:emArr,backgroundColor:'rgba(139,92,246,.7)',yAxisID:'y2'}]},options:{...barOpts,scales:{y:{...axisY,title:{display:true,text:'%',color:'#94a3b8'}},y2:{...axisY,position:'right',grid:{display:false},title:{display:true,text:'x',color:'#94a3b8'}}}}});
-  mkChart('chart-roe-trend',{type:'line',data:{labels:anos,datasets:[{label:'ROE %',data:roeArr,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',fill:true,tension:.4}]},options:{...lineOpts,scales:{y:{...axisY}}}});
+  mkChart('chart-roe-trend',{type:'line',data:{labels:anos,datasets:[{label:'ROE Directo %',data:roeArr,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',fill:true,tension:.4},{label:'ROE DuPont %',data:roeDpArr,borderColor:'#8b5cf6',borderDash:[4,4],tension:.4}]},options:{...lineOpts,scales:{y:{...axisY}}}});
   document.getElementById('table-dupont').innerHTML=buildTable(
-    ['Año','Margen Neto','Rot. Activos','Multiplicador','ROE (DuPont)','ROE (Directo)'],
-    data.map(d=>{const ra2=d.sum_ingresos&&d.sum_activos?d.sum_ingresos/d.sum_activos:0;const em2=d.sum_activos&&d.sum_patrimonio?d.sum_activos/d.sum_patrimonio:0;return[d.ano,pct(d.avg_margen_neto),ra2.toFixed(2)+'x',em2.toFixed(2)+'x',pct((d.avg_margen_neto||0)*ra2*em2),pct(d.avg_roe)];})
+    ['Año','Margen Neto','Rot. Activos','Multiplicador','ROE DuPont','ROE Directo'],
+    data.map(d=>{
+      const r=computeRatios(d);
+      return[d.ano,pct(r.dupont.margenNeto),r.dupont.rotActivos.toFixed(2)+'x',r.dupont.multiplicadorCapital.toFixed(2)+'x',pct(r.dupont.roeDupont),pct(r.rentabilidad.roe)];
+    })
   );
 }
 
@@ -217,7 +261,8 @@ function renderProspectiva(data,anos){
 function renderAtractivo(data,ctx,lastRow){
   const n=data.length-1;
   const cagrIng=cagr(data[0]?.sum_ingresos,data[n]?.sum_ingresos,n)||0;
-  const roa=(lastRow.avg_roa||0), mar=(lastRow.avg_margen_neto||0), emp=lastRow.num_empresas||0;
+  const _aR=computeRatios(lastRow);
+  const roa=(_aR.rentabilidad.roa||0), mar=(_aR.rentabilidad.margenNeto||0), emp=lastRow.num_empresas||0;
   const sTam=Math.min(Math.max(Math.log10(Math.abs(lastRow.sum_ingresos||1)+1)/12*100,0),100);
   const sCre=Math.min(Math.max(50+cagrIng*200,0),100);
   const sRent=Math.min(Math.max(50+roa*300,0),100);

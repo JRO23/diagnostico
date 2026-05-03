@@ -119,12 +119,38 @@
           <canvas id="chart-radar-salud" height="240"></canvas>
         </div>
       </div>
+
+      <!-- 4 categorías -->
+      <div class="ind-category-grid">
+
+        <div class="ind-cat-card" style="--cat-color:#3b82f6">
+          <div class="ind-cat-header"><span class="ind-cat-icon">🔵</span><div><div class="ind-cat-title">Liquidez</div><div class="ind-cat-sub">¿Puedes pagar tus deudas a corto plazo?</div></div></div>
+          <div class="ind-rows" id="ind-liquidez"></div>
+        </div>
+
+        <div class="ind-cat-card" style="--cat-color:#f59e0b">
+          <div class="ind-cat-header"><span class="ind-cat-icon">🟡</span><div><div class="ind-cat-title">Actividad</div><div class="ind-cat-sub">¿Qué tan rápido mueves el dinero?</div></div></div>
+          <div class="ind-rows" id="ind-actividad"></div>
+        </div>
+
+        <div class="ind-cat-card" style="--cat-color:#10b981">
+          <div class="ind-cat-header"><span class="ind-cat-icon">🟢</span><div><div class="ind-cat-title">Rentabilidad</div><div class="ind-cat-sub">¿Qué ganancias está dejando el negocio?</div></div></div>
+          <div class="ind-rows" id="ind-rentabilidad"></div>
+        </div>
+
+        <div class="ind-cat-card" style="--cat-color:#8b5cf6">
+          <div class="ind-cat-header"><span class="ind-cat-icon">🔵</span><div><div class="ind-cat-title">Endeudamiento</div><div class="ind-cat-sub">¿De quién es la empresa, tuya o del banco?</div></div></div>
+          <div class="ind-rows" id="ind-endeudamiento"></div>
+        </div>
+
+      </div>
+
       <div class="card">
-        <h3 class="card-title">📈 Evolución de Ratios Clave</h3>
+        <h3 class="card-title">📈 Evolución de Indicadores Clave (por año)</h3>
         <canvas id="chart-salud-trend" height="120"></canvas>
       </div>
       <div class="card">
-        <h3 class="card-title">📋 Tabla de Indicadores por Año</h3>
+        <h3 class="card-title">📋 Resumen por Año — Todos los Indicadores</h3>
         <div class="table-wrap" id="table-salud"></div>
       </div>
     </div>
@@ -198,6 +224,7 @@
   </div><!-- /dashboard -->
 </main>
 
+<script src="ratios.js"></script>
 <script src="main.js"></script>
 </body>
 </html>
